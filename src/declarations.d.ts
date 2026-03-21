@@ -1,6 +1,9 @@
-declare module 'chat/Chatbot' {
-  const Chatbot: React.ComponentType<{ emotions?: string[] }>
-  export default Chatbot
+declare module 'chat/BookRecommendation' {
+  const BookRecommendation: React.ComponentType<{
+    emotions?: string[]
+    onBack?: () => void
+  }>
+  export default BookRecommendation
 }
 
 declare module 'mfeHost/EmotionStoreInitializer' {
