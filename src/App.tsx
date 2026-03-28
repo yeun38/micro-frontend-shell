@@ -53,6 +53,7 @@ function RemoteModule({ name, children }: { name: string; children: React.ReactN
 function BooksPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const userId = new URLSearchParams(location.search).get('userId')
   const emotions = (location.state as { emotions?: string[] })?.emotions ?? []
 
   return (
@@ -65,7 +66,7 @@ function BooksPage() {
           </div>
         }
       >
-        <RemoteBookRecommendation emotions={emotions} onBack={() => navigate('/')} />
+        <RemoteBookRecommendation userId={userId} emotions={emotions} onBack={() => navigate('/')} />
       </Suspense>
     </RemoteErrorBoundary>
   )
@@ -75,9 +76,11 @@ function BooksPage() {
 function HomePage({
   userEmotions,
   isLoggedIn,
+  userId,
 }: {
   userEmotions: string[]
   isLoggedIn: boolean
+  userId: string | null
 }) {
   const navigate = useNavigate()
 
@@ -116,7 +119,7 @@ function HomePage({
                 </div>
                 <button
                   className="find-books-btn"
-                  onClick={() => navigate('/books', { state: { emotions: userEmotions } })}
+                  onClick={() => navigate(`/books?userId=${userId}`, { state: { emotions: userEmotions } })}
                 >
                   이 감정들로 책 추천받기
                   <span className="btn-arrow">→</span>
@@ -177,6 +180,7 @@ function HomePage({
 function App() {
   const [userEmotions, setUserEmotions] = useState<string[]>([])
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   // 로그인 상태 감지
   useEffect(() => {
@@ -186,7 +190,11 @@ function App() {
         const mod = module as any
         const useAuthStore = mod.default?.useAuthStore ?? mod.useAuthStore
         if (!useAuthStore) return
-        const update = () => setIsLoggedIn(!!useAuthStore.getState().user)
+        const update = () => {
+          const user = useAuthStore.getState().user
+          setIsLoggedIn(!!user)
+          setUserId(user?.uid ?? null)
+        }
         update()
         return useAuthStore.subscribe(update)
       })
@@ -199,10 +207,14 @@ function App() {
       .then(({ useSharedEmotionStore }) => {
         const getEmotions = () => {
           const records = useSharedEmotionStore.getState().getRecentWeekRecords()
-          return [...new Set(records.map((r) => r.emotion))]
+          console.log('[emotionStore] 전체 records:', records)
+          const emotions = [...new Set(records.map((r) => r.emotion))]
+          console.log('[emotionStore] 추출된 emotions:', emotions)
+          return emotions
         }
         setUserEmotions(getEmotions())
         return useSharedEmotionStore.subscribe(() => {
+          console.log('[emotionStore] store 변경 감지')
           setUserEmotions(getEmotions())
         })
       })
@@ -221,7 +233,7 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<HomePage userEmotions={userEmotions} isLoggedIn={isLoggedIn} />}
+          element={<HomePage userEmotions={userEmotions} isLoggedIn={isLoggedIn} userId={userId} />}
         />
         <Route path="/books" element={<BooksPage />} />
       </Routes>

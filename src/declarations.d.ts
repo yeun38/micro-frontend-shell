@@ -1,5 +1,6 @@
 declare module 'chat/BookRecommendation' {
   const BookRecommendation: React.ComponentType<{
+    userId?: string | null
     emotions?: string[]
     onBack?: () => void
   }>
